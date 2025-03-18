@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Virtual Tour</title>
+    <style>
+        /* Loading animation styles */
+        .loader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Landscape message styles */
+        .landscape-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 999;
+            opacity: 0;
+            animation: fadeInOut 8s ease;
+            pointer-events: none;
+        }
+
+        .rotate-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 15px;
+            animation: rotate 2s infinite ease-in-out;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .rotate-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: white;
+        }
+
+        .landscape-text {
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 1.1rem;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        }
+
+        @keyframes rotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Original styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            touch-action: manipulation;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        iframe.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading animation -->
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Landscape orientation message -->
+    <div class="landscape-message" id="landscapeMessage">
+        <div class="rotate-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M10 16v-4h4v4h-4zm6-12h-8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14h-8V6h8v12z"/>
+            </svg>
+        </div>
+        <p class="landscape-text">Rotate to landscape for better view</p>
+    </div>
+
+    <!-- Tour iframe -->
+    <iframe 
+        id="tour-iframe"
+        src="https://kuula.co/share/collection/7XyzN?logo=1&info=1&fs=1&vr=0&sd=1&thumbs=1" 
+        allowfullscreen 
+        allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+        loading="lazy"
+        scrolling="no"
+        onload="handleLoadComplete()">
+    </iframe>
+
+    <script>
+        let messageTimeout;
+        
+        function handleLoadComplete() {
+            const loader = document.getElementById('loader');
+            const iframe = document.getElementById('tour-iframe');
+            const landscapeMessage = document.getElementById('landscapeMessage');
+
+            // Immediately show tour
+            iframe.style.opacity = '1';
+
+            // Hide loader
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.remove();
+                checkOrientation();
+            }, 500);
+
+            // Orientation handling
+            function checkOrientation() {
+                if (window.innerHeight > window.innerWidth) {
+                    showTemporaryMessage();
+                }
+            }
+
+            function showTemporaryMessage() {
+                landscapeMessage.style.display = 'flex';
+                landscapeMessage.style.opacity = '0';
+                void landscapeMessage.offsetHeight; // Trigger reflow
+                landscapeMessage.style.animation = 'none';
+                
+                setTimeout(() => {
+                    landscapeMessage.style.animation = 'fadeInOut 8s ease';
+                }, 50);
+
+                // Clear any existing timeout
+                if (messageTimeout) clearTimeout(messageTimeout);
+                
+                // Hide after animation completes
+                messageTimeout = setTimeout(() => {
+                    landscapeMessage.style.display = 'none';
+                }, 8000);
+            }
+
+            // Orientation change listeners
+            function handleOrientationChange() {
+                if (window.innerHeight > window.innerWidth) {
+                    showTemporaryMessage();
+                } else {
+                    landscapeMessage.style.display = 'none';
+                    if (messageTimeout) clearTimeout(messageTimeout);
+                }
+            }
+
+            // Listen for both orientation change and resize events
+            window.addEventListener('orientationchange', handleOrientationChange);
+            window.addEventListener('resize', handleOrientationChange);
+        }
+    </script>
+</body>
+</html>
